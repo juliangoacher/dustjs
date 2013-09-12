@@ -1,0 +1,32 @@
+1. Grammar at dust.pegjs:32 should be altered to include [ "pos", line, column ] as the 5th item of the result array.
+2. Instead, for now the parser.js has been modified directly at line 376 to make the corresponding change.
+3. Following changes made to compiler.js:
+    24:      Added a pos: noop to dust.optimizers.
+    117:     Added "var name=\""+(name ? name : '<unknown>')+"\";" to make template name available when reporting position.
+    195:     Change node[4] to node[5] (see comment for #218)
+    208:     Change node[4] to node[5] (see comment for #218)
+    218:     Change node[4] to node[5] (this is because the parser change causes a change in the position of the body node,
+             which is pushed later in the parse onto the array created at parser.js:376)
+    228-230: Change node[4] to node[5], added + "[name," + node[4][1] + "," + node[4][2] + "]" to report position
+    239:     Change node[4] to node[5] (see comment for #218)
+    332:     Same changes as on 218.
+4. Modify the helper function at dust.js:576-579 to accept the position argument and pass it through to the user defined
+   helper function.
+
+
+
+Original pre-change notes:
+Possible method for making template position (line/column) available to helper functions when reporting errors:
+* Modify grammar at dust.pegjs:32 to include [ "pos", line, column ] as fifth item in array result.
+* This corresponds to parser.js:376 in the current parser code, change could be made directly there to test.
+* Add a pos: noop to dust.optimizers at compiler.js:24
+* Then modify the "@" handler in compiler.js - this generates a call to helper(). Include node[4] as the 4th arg.
+  - edit to compiler.js:332 also needed
+  - edit to compiler.js:349 also needed
+* Finally, modify the helper function in dust.js:576 to accept a fifth pos arg, and pass this through to the
+  dust helper function. This will mean that helper functions will have a pos = [ line, column ] var available to
+  report location of errors relative to the template.
+  - The template name is available in the context.name args of the "@" function, so could be incorporated into the
+    pos argument when the helper() call is generated.
+  - Or modify compiler.js:113 to include '"var name="+name;' - name will then be in scope when passing the pos arg.
+
